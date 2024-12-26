@@ -2,19 +2,20 @@
     android:id="@+id/fl"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/backgroud">
+    android:background="@drawable/background2">
 
     <ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:src="@drawable/usagi" />
-
-    <ImageView
-        android:id="@+id/imageView2"
+        android:id="@+id/gifImageView2"
         android:layout_width="72dp"
         android:layout_height="72dp"
         android:src="@drawable/tao" />
+
+    <ImageView
+        android:id="@+id/gifImageView"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_centerInParent="true"
+        android:scaleType="centerInside" />
 
     <TextView
         android:id="@+id/info"

@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -20,43 +21,32 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.gson.Gson;
-
-import java.io.IOException;
 import java.util.Random;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     private int score = 0;
-    private boolean isGameRunning = true;
-    private ImageView singleMouse;
-    private ImageView tripleMouse;
+    private boolean GameRunning = true;
+    private ImageView Usagi;
+    private ImageView Tao;
     private TextView timerTextView;
-    private TextView infoTextView;
 
-    private final int[][] positions = new int[][]{
-            {277, 200}, {535, 200}, {832, 200},
-            {1067, 200}, {1328, 200}, {285, 360},
-            {645, 360}, {1014, 360}, {1348, 360},
-            {319, 600}, {764, 600}, {1229, 600}
+    private final int[][] spot = new int[][]{
+            {277, 200}, {535, 200}, {832, 200}, {1067, 200}, {1328, 200},
+            {190, 425}, {445, 425}, {1014, 425}, {1348, 425},{1552, 425},
+            {319, 650}, {764, 650}, {1229, 650}, {120, 650}, {1493, 650}
     };
 
-    private final Handler handler = new Handler() {
+    private final Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
-            if (!isGameRunning) return;
+            if (!GameRunning) return;
 
             int index = msg.arg1;
             if (msg.what == 0x101) {
-                showMouse(singleMouse, index);
+                showChiikawa(Usagi, index);
             } else if (msg.what == 0x102) {
-                showMouse(tripleMouse, index);
+                showChiikawa(Tao, index);
             }
         }
     };
@@ -67,40 +57,40 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initGameSettings();
+        GameSettings();
         startCountDownTimer();
-        startMouseThreads();
-
-        // API 查詢按鈕
-        findViewById(R.id.button).setOnClickListener(v -> queryAPI());
+        startGameThreads();
     }
 
-    private void initGameSettings() {
+    private void GameSettings() {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         timerTextView = findViewById(R.id.timerTextView);
-        infoTextView = findViewById(R.id.info);
-        singleMouse = findViewById(R.id.imageView1);
-        tripleMouse = findViewById(R.id.imageView2);
+        Usagi = findViewById(R.id.gifImageView);
+        Tao = findViewById(R.id.gifImageView2);
 
-        singleMouse.setOnTouchListener(this::onMouseClicked);
-        tripleMouse.setOnTouchListener(this::onTripleMouseClicked);
+        Usagi.setOnTouchListener(this::onUsagiClicked);
+        Tao.setOnTouchListener(this::onTaoClicked);
 
-        // 載入 GIF 圖片
+        // 載入 GIF 圖片，設定大小一致
         ImageView gifImageView = findViewById(R.id.gifImageView);
-        RequestOptions options = new RequestOptions()
-                .placeholder(R.drawable.placeholder)
-                .error(R.drawable.error);
-
         Glide.with(this)
-                .setDefaultRequestOptions(options)
-                .load("https://media1.tenor.com/images/a76206ffcbf1b53db2a47c5b186c47f5/tenor.gif")
+                .asGif()
+                .load("https://memeprod.ap-south-1.linodeobjects.com/user-maker/af8c1267dedda2a613286a3a8ccb6a1c.gif")
+                .apply(new RequestOptions().override(240, 270)) // 設定大小
+                .into(gifImageView);
+
+        gifImageView = findViewById(R.id.gifImageView2);
+        Glide.with(this)
+                .asGif()
+                .load("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnJ0MWF4NGttaHE0d293cDV2M2I3bDl0ampqOHNsbWxrMmNnaW13YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/IeFB04H51Ntwtam8Y8/giphy.gif")
+                .apply(new RequestOptions().override(270, 300)) // 設定大小
                 .into(gifImageView);
     }
 
     private void startCountDownTimer() {
-        long GAME_DURATION_MILLIS = 10000;
+        long GAME_DURATION_MILLIS =15000;
         new CountDownTimer(GAME_DURATION_MILLIS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -115,24 +105,37 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
-    private void startMouseThreads() {
-        Thread singleMouseThread = new Thread(() -> runMouseLogic(0x101));
-        Thread tripleMouseThread = new Thread(() -> runMouseLogic(0x102));
+    private void startGameThreads() {
+        Thread UsagiThread = new Thread(() -> runGameLogic(0x101));
+        Thread TaoThread = new Thread(() -> runGameLogic(0x102));
 
-        singleMouseThread.start();
-        tripleMouseThread.start();
+        UsagiThread.start();
+        TaoThread.start();
     }
 
-    private void runMouseLogic(int messageType) {
+    private void runGameLogic(int messageType) {
         Random random = new Random();
-        int lastIndex = -1;
+        int lastUsagiIndex = -1;
+        int lastTaoIndex = -1;
+        int nextUsagiIndex = -1;
+        int nextTaoIndex = -1;
 
-        while (isGameRunning) {
+        while (GameRunning) {
             int index;
+
             do {
-                index = random.nextInt(positions.length);
-            } while (index == lastIndex);
-            lastIndex = index;
+                index = random.nextInt(spot.length);
+            } while ((messageType == 0x101 && (index == lastUsagiIndex || index == nextTaoIndex)) ||
+                    (messageType == 0x102 && (index == lastTaoIndex || index == nextUsagiIndex)) ||
+                    (lastUsagiIndex != -1 && lastTaoIndex != -1 && nextUsagiIndex == lastTaoIndex));
+
+            if (messageType == 0x101) {
+                lastUsagiIndex = index;
+                nextUsagiIndex = index;
+            } else {
+                lastTaoIndex = index;
+                nextTaoIndex = index;
+            }
 
             Message message = handler.obtainMessage();
             message.what = messageType;
@@ -147,67 +150,57 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean onMouseClicked(View view, MotionEvent event) {
+    private boolean onUsagiClicked(View view, MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             view.setVisibility(View.INVISIBLE);
             score++;
-            Toast.makeText(this, "打到 [" + score + "] 只地鼠！", Toast.LENGTH_SHORT).show();
+            showScoreToast("+1 分！目前得分：" + score);
         }
         return false;
     }
 
-    private boolean onTripleMouseClicked(View view, MotionEvent event) {
+    private boolean onTaoClicked(View view, MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             view.setVisibility(View.INVISIBLE);
             score -= 2;
-            Toast.makeText(this, "打到 [" + score + "] 只地鼠！", Toast.LENGTH_SHORT).show();
+            showScoreToast("-2 分！目前得分：" + score);
         }
         return false;
     }
 
-    private void showMouse(ImageView mouse, int index) {
-        mouse.setX(positions[index][0]);
-        mouse.setY(positions[index][1]);
-        mouse.setVisibility(View.VISIBLE);
+    private void showChiikawa(ImageView chii, int index) {
+        chii.setX(spot[index][0]);
+        chii.setY(spot[index][1]);
+        chii.setVisibility(View.VISIBLE);
+    }
+
+    private void showScoreToast(String message) {
+        final TextView scoreToastView = new TextView(this);
+        scoreToastView.setText(message);
+        scoreToastView.setBackgroundColor(0xAA000000); // 半透明背景
+        scoreToastView.setTextColor(0xFFFFFFFF); // 白色文字
+        scoreToastView.setTextSize(32);
+        scoreToastView.setPadding(20, 10, 20, 10);
+
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT
+        );
+        scoreToastView.setX(1750); // 自訂位置
+        scoreToastView.setY(1150); // 自訂位置
+
+        addContentView(scoreToastView, layoutParams);
+
+        // 設定短時間後自動移除
+        new Handler().postDelayed(() -> scoreToastView.setVisibility(View.GONE), 500); // 顯示 500 毫秒
     }
 
     private void endGame() {
-        isGameRunning = false;
-        singleMouse.setVisibility(View.INVISIBLE);
-        tripleMouse.setVisibility(View.INVISIBLE);
+        GameRunning = false;
+        Usagi.setVisibility(View.INVISIBLE);
+        Tao.setVisibility(View.INVISIBLE);
         timerTextView.setText("剩餘時間：0秒");
 
         Toast.makeText(this, "遊戲結束！總得分：" + score, Toast.LENGTH_LONG).show();
-    }
-
-    private void queryAPI() {
-        String URL = "https://mock-api/json"; // 測試用的 JSON API
-
-        OkHttpClient okHttpClient = UnsafeOkHttpClient.getUnsafeOkhttpClient();
-        Request request = new Request.Builder().url(URL).build();
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                // 處理 API 響應
-                if (response.isSuccessful()) {
-                    String responseData = response.body().string();
-                    runOnUiThread(() -> {
-                        infoTextView.setText("API查詢成功: " + responseData);
-                    });
-                } else {
-                    runOnUiThread(() -> {
-                        infoTextView.setText("API查詢失敗: " + response.message());
-                    });
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e("查詢失敗", e.getMessage());
-                runOnUiThread(() -> {
-                    infoTextView.setText("API查詢失敗: " + e.getMessage());
-                });
-            }
-        });
     }
 }
