@@ -30,6 +30,8 @@
             android:name=".MainActivity"
             android:exported="true" />
 
+        <activity android:name=".GoodGameActivity" />
+
     </application>
 
 </manifest>

@@ -5,6 +5,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean GameRunning = true;
     private ImageView Usagi;
     private ImageView Tao;
+    private int UsagiCount = 0;
+    private int TaoCount = 0;
     private TextView timerTextView;
 
     private final int[][] spot = new int[][]{
@@ -90,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCountDownTimer() {
-        long GAME_DURATION_MILLIS =15000;
+        long GAME_DURATION_MILLIS =30000;
         new CountDownTimer(GAME_DURATION_MILLIS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -150,24 +153,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean onUsagiClicked(View view, MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            view.setVisibility(View.INVISIBLE);
-            score++;
-            showScoreToast("+1 分！目前得分：" + score);
-        }
-        return false;
-    }
-
-    private boolean onTaoClicked(View view, MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            view.setVisibility(View.INVISIBLE);
-            score -= 2;
-            showScoreToast("-2 分！目前得分：" + score);
-        }
-        return false;
-    }
-
     private void showChiikawa(ImageView chii, int index) {
         chii.setX(spot[index][0]);
         chii.setY(spot[index][1]);
@@ -177,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
     private void showScoreToast(String message) {
         final TextView scoreToastView = new TextView(this);
         scoreToastView.setText(message);
-        scoreToastView.setBackgroundColor(0xAA000000); // 半透明背景
-        scoreToastView.setTextColor(0xFFFFFFFF); // 白色文字
+        scoreToastView.setBackgroundColor(0xAA000000);
+        scoreToastView.setTextColor(0xFFFFFFFF);
         scoreToastView.setTextSize(32);
         scoreToastView.setPadding(20, 10, 20, 10);
 
@@ -186,13 +171,33 @@ public class MainActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT
         );
-        scoreToastView.setX(1750); // 自訂位置
-        scoreToastView.setY(1150); // 自訂位置
+        scoreToastView.setX(1750);
+        scoreToastView.setY(1150);
 
         addContentView(scoreToastView, layoutParams);
 
         // 設定短時間後自動移除
         new Handler().postDelayed(() -> scoreToastView.setVisibility(View.GONE), 500); // 顯示 500 毫秒
+    }
+
+    private boolean onUsagiClicked(View view, MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            view.setVisibility(View.INVISIBLE);
+            score -= 2;
+            UsagiCount++; // 增加 Usagi 計數
+            showScoreToast("-2 分！目前得分：" + score);
+        }
+        return false;
+    }
+
+    private boolean onTaoClicked(View view, MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            view.setVisibility(View.INVISIBLE);
+            score++;
+            TaoCount++; // 增加 Tao 計數
+            showScoreToast("+1 分！目前得分：" + score);
+        }
+        return false;
     }
 
     private void endGame() {
@@ -201,6 +206,14 @@ public class MainActivity extends AppCompatActivity {
         Tao.setVisibility(View.INVISIBLE);
         timerTextView.setText("剩餘時間：0秒");
 
-        Toast.makeText(this, "遊戲結束！總得分：" + score, Toast.LENGTH_LONG).show();
+        // 跳轉到 GameOverActivity 並傳遞分數與擊中數量
+        Intent intent = new Intent(this, GoodGameActivity.class);
+        intent.putExtra("FINAL_SCORE", score);       // 傳遞總分
+        intent.putExtra("USAGI_COUNT", UsagiCount); // 傳遞 Usagi 數量
+        intent.putExtra("TAO_COUNT", TaoCount);     // 傳遞 Tao 數量
+        startActivity(intent);
+
+        // 結束當前 Activity
+        finish();
     }
 }

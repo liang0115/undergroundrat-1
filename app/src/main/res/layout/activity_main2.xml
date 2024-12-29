@@ -6,11 +6,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/images">
 
-
-    <!-- 標題文字 -->
-
-    <!-- 進入遊戲按鈕 -->
-
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
